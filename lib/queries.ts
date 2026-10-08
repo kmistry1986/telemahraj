@@ -57,7 +57,7 @@ export async function getMahrajProfile(id: string): Promise<MahrajProfile> {
     item_lists: itemLists.data ?? [],
     prep_videos: videos.data ?? [],
     availability: avail.data ?? [],
-  } as MahrajProfile;
+  } as unknown as MahrajProfile;
 }
 
 export async function getNearbyMahrajs(city: string, limit = 3) {
