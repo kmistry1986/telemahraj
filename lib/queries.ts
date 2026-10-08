@@ -108,7 +108,7 @@ export async function getCeremoniesByCategory(category: string) {
 export async function createBooking(booking: Omit<Booking, "id" | "created_at">) {
   const { data, error } = await supabase
     .from("bookings")
-    .insert(booking)
+    .insert(booking as any)
     .select()
     .single();
   if (error) throw error;
@@ -131,7 +131,7 @@ export async function getMahrajBookings(mahrajId: string) {
 export async function createReview(review: Omit<Review, "id" | "created_at">) {
   const { data, error } = await supabase
     .from("reviews")
-    .insert(review)
+    .insert(review as any)
     .select()
     .single();
   if (error) throw error;
