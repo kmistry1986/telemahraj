@@ -186,6 +186,6 @@ export async function getDashboardStats(mahrajId: string) {
   return {
     upcomingCount: upcoming.count ?? 0,
     monthEarningsCents: totalEarnings,
-    rating: mahraj.data?.rating_avg ?? 0,
+    rating: (mahraj.data as any)?.rating_avg ?? 0,
   };
 }
