@@ -45,8 +45,10 @@ export async function getMahrajProfile(id: string): Promise<MahrajProfile> {
 
   if (mahraj.error) throw mahraj.error;
 
+  const mahrajData = mahraj.data as Record<string, any>;
+
   return {
-    ...mahraj.data,
+    ...mahrajData,
     services: (services.data ?? []).map((s: any) => ({
       ...s,
       segments: s.service_segments ?? [],
