@@ -181,7 +181,7 @@ export async function getDashboardStats(mahrajId: string) {
     supabase.from("mahrajs").select("rating_avg").eq("id", mahrajId).single(),
   ]);
 
-  const totalEarnings = (earnings.data ?? []).reduce((sum, b) => sum + (b.mahraj_payout_cents ?? 0), 0);
+  const totalEarnings = ((earnings.data ?? []) as any[]).reduce((sum: number, b: any) => sum + (b.mahraj_payout_cents ?? 0), 0);
 
   return {
     upcomingCount: upcoming.count ?? 0,
