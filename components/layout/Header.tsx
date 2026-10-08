@@ -44,6 +44,12 @@ export default function Header() {
         <Link href="/dashboard" className="no-underline font-medium text-dark hover:text-brand-dark">
           For Mahrajs
         </Link>
+        <Link
+          href="/search"
+          className="no-underline font-bold text-sm px-5 py-2.5 rounded-lg bg-brand text-white hover:bg-brand-dark"
+        >
+          Book a pooja
+        </Link>
       </div>
     </header>
   );
