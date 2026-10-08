@@ -2,21 +2,52 @@ import Link from "next/link";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { getMahrajs } from "@/lib/queries";
+import { CATEGORIES } from "@/lib/ritual-data";
 
-const OCCASIONS = [
-  { id: "baby", title: "A baby is born", ceremonies: "Namkaran, Chhathi, Annaprashan" },
-  { id: "home", title: "Moving into a new home", ceremonies: "Griha Pravesh, Vastu Shanti" },
-  { id: "wedding", title: "Getting married", ceremonies: "Sagai, Haldi, Vivah, Griha Shanti" },
-  { id: "business", title: "Starting a business", ceremonies: "Lakshmi Pooja, Ganesh Pooja" },
-  { id: "milestone", title: "Birthdays and milestones", ceremonies: "Ayush Homam, Satyanarayan Katha" },
-  { id: "remembrance", title: "Remembering a loved one", ceremonies: "Shraddh, Antyeshti guidance" },
-];
+const ICON_MAP: Record<string, string> = {
+  ring: "💍",
+  baby: "👶",
+  home: "🏠",
+  briefcase: "💼",
+  star: "⭐",
+  flower: "🪷",
+};
+
+const OCCASION_TITLES: Record<string, string> = {
+  wedding: "Getting married",
+  baby: "A baby is born",
+  home: "Moving into a new home",
+  business: "Starting a business",
+  milestone: "Birthdays and milestones",
+  remembrance: "Remembering a loved one",
+};
+
+// Build occasions dynamically from ritual data
+const OCCASIONS = CATEGORIES.map((cat) => {
+  const allCeremonies = cat.subSections.flatMap((s) => s.ceremonies);
+  const names = allCeremonies.slice(0, 3).map((c) => c.name).join(", ");
+  const extra = allCeremonies.length > 3 ? ` +${allCeremonies.length - 3} more` : "";
+  return {
+    id: cat.id,
+    icon: ICON_MAP[cat.icon] || "📿",
+    title: OCCASION_TITLES[cat.id] || cat.label,
+    ceremonies: names + extra,
+    count: allCeremonies.length,
+  };
+});
+
+// Flat list of every ceremony for the dropdown
+const ALL_CEREMONIES = CATEGORIES.flatMap((cat) =>
+  cat.subSections.flatMap((s) =>
+    s.ceremonies.map((c) => ({ name: c.name, slug: c.slug, categoryId: cat.id }))
+  )
+);
 
 const FEATURES = [
-  { icon: "ð¯", title: "Pick your segments", desc: "Choose which parts of the ceremony to include and skip. See the price update in real time." },
-  { icon: "ð", title: "In person or virtual", desc: "Attend in person, join virtually, or both. Family anywhere in the world can watch live." },
-  { icon: "ð", title: "Explanations in English", desc: "Toggle real-time English explanations so everyone understands what is happening and why." },
-  { icon: "ð¦", title: "Samagri delivered", desc: "Order a complete kit built from your Mahraj's own item list. Arrives before the ceremony." },
+  { icon: "🎯", title: "Pick your segments", desc: "Choose which parts of the ceremony to include and skip. See the price update in real time." },
+  { icon: "🌐", title: "In person or virtual", desc: "Attend in person, join virtually, or both. Family anywhere in the world can watch live." },
+  { icon: "📖", title: "Explanations in English", desc: "Toggle real-time English explanations so everyone understands what is happening and why." },
+  { icon: "📦", title: "Samagri delivered", desc: "Order a complete kit built from your Mahraj's own item list. Arrives before the ceremony." },
 ];
 
 const STEPS = [
@@ -65,10 +96,14 @@ export default async function HomePage() {
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-bold text-dark/60 uppercase tracking-wide">Ceremony</label>
                   <select className="h-11 px-3 rounded-xl bg-warm-surface text-dark border border-warm-border font-medium text-sm">
-                    <option>Griha Pravesh</option>
-                    <option>Satyanarayan Katha</option>
-                    <option>Vivah</option>
-                    <option>Namkaran</option>
+                    <option value="">Select ceremony</option>
+                    {CATEGORIES.map((cat) => (
+                      <optgroup key={cat.id} label={cat.label}>
+                        {cat.subSections.flatMap((s) => s.ceremonies).map((c) => (
+                          <option key={c.slug} value={c.slug}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                    ))}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
@@ -144,15 +179,21 @@ export default async function HomePage() {
           </div>
           <Link href="/rituals" className="font-bold text-sm whitespace-nowrap">Open the full ritual guide</Link>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {OCCASIONS.map((occ) => (
             <Link
               key={occ.id}
               href={`/rituals?category=${occ.id}`}
-              className="border border-warm-border rounded-2xl p-5 text-dark no-underline hover:border-brand hover:bg-warm-bg transition-colors flex flex-col gap-2"
+              className="border border-warm-border rounded-2xl p-5 text-dark no-underline hover:border-brand hover:bg-warm-bg transition-colors flex flex-col gap-2 group"
             >
-              <strong className="font-heading text-lg">{occ.title}</strong>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{occ.icon}</span>
+                <strong className="font-heading text-lg">{occ.title}</strong>
+              </div>
               <span className="text-sm text-dark/50">{occ.ceremonies}</span>
+              <span className="text-xs font-bold text-brand group-hover:underline mt-1">
+                {occ.count} ceremonies &rarr;
+              </span>
             </Link>
           ))}
         </div>
