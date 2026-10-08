@@ -1,12 +1,18 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import BookingForm, { type BookingSegment } from "@/components/book/BookingForm";
 import { getServiceWithSegments } from "@/lib/queries";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function BookPage({ params }: { params: { id: string } }) {
+  // Require login before customizing a booking.
+  const supabase = createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) redirect(`/login?redirect=${encodeURIComponent(`/book/${params.id}`)}`);
+
   let service: any;
   try {
     service = await getServiceWithSegments(params.id);
