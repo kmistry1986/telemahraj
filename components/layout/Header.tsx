@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 const NAV_LINKS = [
   { href: "/search", label: "Find a Mahraj" },
   { href: "/rituals", label: "Ritual guide" },
-  { href: "/shop", label: "Pooja shop" },
   { href: "/groups", label: "Bhajan groups" },
 ];
 

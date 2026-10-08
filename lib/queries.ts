@@ -38,7 +38,7 @@ export async function getMahrajProfile(id: string): Promise<MahrajProfile> {
   const [mahraj, services, reviews, itemLists, videos, avail] = await Promise.all([
     supabase.from("mahrajs").select("*").eq("id", id).single(),
     supabase.from("services").select("*, service_segments(*)").eq("mahraj_id", id).eq("active", true),
-    supabase.from("reviews").select("*, user:users(full_name)").eq("mahraj_id", id).order("created_at", { ascending: false }).limit(20),
+    supabase.from("reviews").select("*, user:users!reviews_user_id_fkey(full_name)").eq("mahraj_id", id).order("created_at", { ascending: false }).limit(20),
     supabase.from("item_lists").select("*").eq("mahraj_id", id),
     supabase.from("prep_videos").select("*").eq("mahraj_id", id).order("created_at", { ascending: false }),
     supabase.from("availability").select("*").eq("mahraj_id", id).gte("date", new Date().toISOString().split("T")[0]),
@@ -78,7 +78,7 @@ export async function getNearbyMahrajs(city: string, limit = 3) {
 export async function getServiceWithSegments(serviceId: string) {
   const { data, error } = await supabase
     .from("services")
-    .select("*, service_segments(*), mahraj:mahrajs(id, display_name, title, initials, avatar_url)")
+    .select("*, service_segments(*), mahraj:mahrajs(id, display_name, title, initials, avatar_url, languages)")
     .eq("id", serviceId)
     .single();
   if (error) throw error;
@@ -142,7 +142,7 @@ export async function createReview(review: Omit<Review, "id" | "created_at">) {
 export async function getMahrajReviews(mahrajId: string, limit = 10) {
   const { data, error } = await supabase
     .from("reviews")
-    .select("*, user:users(full_name)")
+    .select("*, user:users!reviews_user_id_fkey(full_name)")
     .eq("mahraj_id", mahrajId)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -248,4 +248,47 @@ export async function getDashboardStats(mahrajId: string) {
     monthEarningsCents: totalEarnings,
     rating: (mahraj.data as any)?.rating_avg ?? 0,
   };
+}
+
+// Full data set for the Mahraj dashboard (treats mahrajId as the signed-in Mahraj)
+export async function getDashboardData(mahrajId: string) {
+  const today = new Date().toISOString().split("T")[0];
+
+  const [mahraj, bookings, itemLists, videos] = await Promise.all([
+    supabase.from("mahrajs").select("*").eq("id", mahrajId).single(),
+    supabase
+      .from("bookings")
+      .select("*, service:services(name), user:users!bookings_user_id_fkey(full_name, city, state)")
+      .eq("mahraj_id", mahrajId)
+      .in("status", ["pending", "accepted"])
+      .gte("date", today)
+      .order("date", { ascending: true }),
+    supabase.from("item_lists").select("*, ceremony:ceremonies(name)").eq("mahraj_id", mahrajId),
+    supabase.from("prep_videos").select("id", { count: "exact" }).eq("mahraj_id", mahrajId),
+  ]);
+
+  if (mahraj.error) throw mahraj.error;
+
+  const all = (bookings.data ?? []) as any[];
+
+  return {
+    mahraj: mahraj.data as Mahraj,
+    pending: all.filter((b) => b.status === "pending"),
+    upcoming: all.filter((b) => b.status === "accepted"),
+    itemLists: (itemLists.data ?? []) as any[],
+    videoCount: videos.count ?? 0,
+  };
+}
+
+// Booking detail with its service, segments, mahraj and family — drives the live ceremony view
+export async function getBookingWithService(bookingId: string) {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select(
+      "*, service:services(*, service_segments(*)), mahraj:mahrajs(display_name, title, initials), user:users!bookings_user_id_fkey(full_name)"
+    )
+    .eq("id", bookingId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as any;
 }

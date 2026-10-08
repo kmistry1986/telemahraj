@@ -4,7 +4,6 @@ const FOOTER_LINKS = {
   "For families": [
     { href: "/search", label: "Find a Mahraj" },
     { href: "/rituals", label: "Ritual guide" },
-    { href: "/shop", label: "Pooja shop" },
     { href: "/groups", label: "Bhajan groups" },
   ],
   "For Mahrajs": [
