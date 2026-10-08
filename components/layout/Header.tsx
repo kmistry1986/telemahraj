@@ -79,7 +79,7 @@ export default function Header() {
               For Mahrajs
             </Link>
             <Link href="/login" className="no-underline font-medium text-dark hover:text-brand-dark">
-              Log in
+              Log in / Sign up
             </Link>
           </>
         )}
