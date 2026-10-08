@@ -2,7 +2,8 @@ import { supabase } from "./supabase";
 import type {
   Mahraj, MahrajProfile, Service, ServiceSegment,
   Review, Availability, Ceremony, ShopProduct,
-  BhajanGroup, Booking, ItemList, PrepVideo, User,
+  BhajanGroup, BhajanGroupEvent, BhajanSong, PrasadSignup,
+  Booking, ItemList, PrepVideo, User,
 } from "@/types/database";
 
 // ---- Mahraj queries ----
@@ -162,11 +163,79 @@ export async function getShopProducts(category?: string) {
 // ---- Bhajan group queries ----
 
 export async function getBhajanGroups(city?: string) {
-  let q = supabase.from("bhajan_groups").select("*");
+  let q = supabase
+    .from("bhajan_groups")
+    .select("*")
+    .eq("active", true);
   if (city) q = q.ilike("city", `%${city}%`);
   const { data, error } = await q.order("member_count", { ascending: false });
   if (error) throw error;
   return data as BhajanGroup[];
+}
+
+export async function getBhajanGroupBySlug(slug: string) {
+  const { data, error } = await supabase
+    .from("bhajan_groups")
+    .select("*")
+    .eq("slug", slug)
+    .single();
+  if (error) throw error;
+  return data as BhajanGroup;
+}
+
+export async function getBhajanGroupById(id: string) {
+  const { data, error } = await supabase
+    .from("bhajan_groups")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data as BhajanGroup;
+}
+
+export async function getGroupNextEvent(groupId: string) {
+  const today = new Date().toISOString().split("T")[0];
+  const { data, error } = await supabase
+    .from("bhajan_group_events")
+    .select("*")
+    .eq("group_id", groupId)
+    .gte("event_date", today)
+    .order("event_date", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data as BhajanGroupEvent | null;
+}
+
+export async function getGroupEvents(groupId: string) {
+  const { data, error } = await supabase
+    .from("bhajan_group_events")
+    .select("*")
+    .eq("group_id", groupId)
+    .order("event_date", { ascending: false })
+    .limit(10);
+  if (error) throw error;
+  return data as BhajanGroupEvent[];
+}
+
+export async function getGroupSongs(groupId: string) {
+  const { data, error } = await supabase
+    .from("bhajan_songs")
+    .select("*")
+    .eq("group_id", groupId)
+    .order("vote_count", { ascending: false });
+  if (error) throw error;
+  return data as BhajanSong[];
+}
+
+export async function getEventPrasadSignups(eventId: string) {
+  const { data, error } = await supabase
+    .from("prasad_signups")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data as PrasadSignup[];
 }
 
 // ---- Dashboard queries ----

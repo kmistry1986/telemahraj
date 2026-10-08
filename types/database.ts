@@ -66,6 +66,36 @@ export interface Database {
         Insert: Omit<BhajanGroup, "id" | "created_at">;
         Update: Partial<Omit<BhajanGroup, "id">>;
       };
+      bhajan_group_events: {
+        Row: BhajanGroupEvent;
+        Insert: Omit<BhajanGroupEvent, "id" | "created_at">;
+        Update: Partial<Omit<BhajanGroupEvent, "id">>;
+      };
+      bhajan_songs: {
+        Row: BhajanSong;
+        Insert: Omit<BhajanSong, "id" | "created_at">;
+        Update: Partial<Omit<BhajanSong, "id">>;
+      };
+      bhajan_song_votes: {
+        Row: BhajanSongVote;
+        Insert: Omit<BhajanSongVote, "id" | "created_at">;
+        Update: Partial<Omit<BhajanSongVote, "id">>;
+      };
+      prasad_signups: {
+        Row: PrasadSignup;
+        Insert: Omit<PrasadSignup, "id" | "created_at">;
+        Update: Partial<Omit<PrasadSignup, "id">>;
+      };
+      bhajan_group_members: {
+        Row: BhajanGroupMember;
+        Insert: Omit<BhajanGroupMember, "id" | "joined_at">;
+        Update: Partial<Omit<BhajanGroupMember, "id">>;
+      };
+      bhajan_event_rsvps: {
+        Row: BhajanEventRsvp;
+        Insert: Omit<BhajanEventRsvp, "id" | "created_at">;
+        Update: Partial<Omit<BhajanEventRsvp, "id">>;
+      };
       shop_products: {
         Row: ShopProduct;
         Insert: Omit<ShopProduct, "id" | "created_at">;
@@ -93,16 +123,16 @@ export interface Mahraj {
   id: string;
   user_id: string;
   display_name: string;
-  title: string; // "Pt.", "Sri", "Acharya", etc.
+  title: string;
   bio?: string;
   city: string;
   state: string;
   zip?: string;
   lat?: number;
   lng?: number;
-  languages: string[]; // ["Gujarati", "Hindi", "Sanskrit", "English"]
-  styles: string[]; // ["Traditional", "Modern", "Arya Samaj"]
-  formats: string[]; // ["in_person", "virtual"]
+  languages: string[];
+  styles: string[];
+  formats: string[];
   years_experience?: number;
   rating_avg: number;
   rating_count: number;
@@ -119,7 +149,7 @@ export interface Service {
   ceremony_id: string;
   name: string;
   description?: string;
-  base_price: number; // in cents
+  base_price: number;
   duration_minutes: number;
   format: "in_person" | "virtual" | "both";
   active: boolean;
@@ -142,8 +172,8 @@ export interface Booking {
   user_id: string;
   mahraj_id: string;
   service_id: string;
-  date: string; // YYYY-MM-DD
-  time: string; // HH:MM
+  date: string;
+  time: string;
   status: "pending" | "accepted" | "declined" | "completed" | "cancelled";
   format: "in_person" | "virtual" | "hybrid";
   pace: "traditional" | "expedited";
@@ -172,9 +202,9 @@ export interface Review {
   booking_id: string;
   user_id: string;
   mahraj_id: string;
-  rating: number; // 1-5
+  rating: number;
   text?: string;
-  tags: string[]; // ["on_time", "clear_explanations", "knowledgeable", etc.]
+  tags: string[];
   dakshina_cents?: number;
   created_at: string;
 }
@@ -183,7 +213,7 @@ export interface Availability {
   id: string;
   mahraj_id: string;
   date: string;
-  time_slots: string[]; // ["09:00", "10:00", "14:00", ...]
+  time_slots: string[];
   blocked: boolean;
 }
 
@@ -204,7 +234,7 @@ export interface ItemList {
   id: string;
   mahraj_id: string;
   ceremony_id: string;
-  items: string[]; // ["Copper kalash", "Coconut", ...]
+  items: string[];
 }
 
 export interface PrepVideo {
@@ -226,7 +256,7 @@ export interface Ceremony {
   category: "baby" | "home" | "wedding" | "business" | "milestone" | "remembrance";
   description?: string;
   typical_duration_minutes?: number;
-  typical_timing?: string; // "Morning, muhurat-based"
+  typical_timing?: string;
   key_items?: string[];
   meaning?: string;
 }
@@ -239,6 +269,72 @@ export interface BhajanGroup {
   state: string;
   member_count: number;
   created_by: string;
+  created_at: string;
+  frequency?: string;
+  languages: string[];
+  tags: string[];
+  slug?: string;
+  active: boolean;
+}
+
+export interface BhajanGroupEvent {
+  id: string;
+  group_id: string;
+  title?: string;
+  event_date: string;
+  event_time: string;
+  host_name?: string;
+  host_address?: string;
+  city?: string;
+  state?: string;
+  rsvp_count: number;
+  virtual_enabled: boolean;
+  notes?: string;
+  created_at: string;
+}
+
+export interface BhajanSong {
+  id: string;
+  group_id: string;
+  name: string;
+  deity?: string;
+  meta?: string;
+  lyrics_url?: string;
+  audio_url?: string;
+  vote_count: number;
+  added_by?: string;
+  created_at: string;
+}
+
+export interface BhajanSongVote {
+  id: string;
+  song_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface PrasadSignup {
+  id: string;
+  event_id: string;
+  item: string;
+  claimed_by?: string;
+  claimed_name?: string;
+  created_at: string;
+}
+
+export interface BhajanGroupMember {
+  id: string;
+  group_id: string;
+  user_id: string;
+  role: "admin" | "member";
+  joined_at: string;
+}
+
+export interface BhajanEventRsvp {
+  id: string;
+  event_id: string;
+  user_id: string;
+  status: "going" | "maybe" | "not_going";
   created_at: string;
 }
 
