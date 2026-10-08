@@ -6,27 +6,41 @@ import type { BhajanGroup } from "@/types/database";
 
 const SAMPLE_GROUPS: BhajanGroup[] = [
   {
-    id: "1", name: "Troy Saturday Satsang", description: "Monthly bhajans hosted at a different member's home. Everyone brings a dish and a voice.",
-    city: "Troy", state: "MI", member_count: 42, created_by: "", created_at: "", frequency: "Monthly",
-    languages: ["Gujarati", "Hindi"], tags: ["family-friendly", "potluck"], slug: "troy-saturday-satsang", active: true,
+    id: "40000000-0000-0000-0000-000000000001",
+    name: "Troy Saturday Satsang",
+    city: "Troy",
+    state: "MI",
+    member_count: 42,
+    frequency: "Monthly",
+    description: "Monthly bhajans hosted at a different member's home. Everyone brings a dish and a voice.",
+    languages: ["Gujarati", "Hindi"],
+    tags: ["Krishna", "Ram", "Aarti"],
+    slug: "troy-saturday-satsang",
+    active: true,
+    created_by: "00000000-0000-0000-0000-000000000000",
+    created_at: "",
   },
   {
-    id: "2", name: "Chicago Devotional Circle", description: "Weekly Thursday evening bhajans at the community center. All are welcome.",
-    city: "Chicago", state: "IL", member_count: 65, created_by: "", created_at: "", frequency: "Weekly",
-    languages: ["Hindi", "Sanskrit"], tags: ["weekly", "open-to-all"], slug: "chicago-devotional-circle", active: true,
-  },
-  {
-    id: "3", name: "Bay Area Krishna Bhajan Mandli", description: "Bi-monthly Krishna bhajans with live harmonium and tabla.",
-    city: "Fremont", state: "CA", member_count: 38, created_by: "", created_at: "", frequency: "Bi-monthly",
-    languages: ["Gujarati", "Hindi", "English"], tags: ["live-music", "krishna"], slug: "bay-area-krishna-bhajan", active: true,
+    id: "40000000-0000-0000-0000-000000000002",
+    name: "Novi Hanuman Mandal",
+    city: "Novi",
+    state: "MI",
+    member_count: 28,
+    frequency: "Every Tuesday",
+    description: "Weekly Hanuman Chalisa recitation followed by bhajans and prasad. All ages welcome.",
+    languages: ["Hindi", "Sanskrit"],
+    tags: ["Hanuman", "Chalisa", "Weekly"],
+    slug: "novi-hanuman-mandal",
+    active: true,
+    created_by: "00000000-0000-0000-0000-000000000000",
+    created_at: "",
   },
 ];
 
-export default async function GroupsPage() {
-  let groups: BhajanGroup[];
+export default async function BhajanGroupsPage() {
+  let groups: BhajanGroup[] = [];
   try {
     groups = await getBhajanGroups();
-    if (!groups.length) groups = SAMPLE_GROUPS;
   } catch {
     groups = SAMPLE_GROUPS;
   }
@@ -34,54 +48,84 @@ export default async function GroupsPage() {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      <div className="max-w-[1200px] mx-auto px-6 py-10">
-        <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
-          <div>
-            <h1 className="font-heading text-4xl font-bold">Bhajan Groups</h1>
-            <p className="text-slate-600 mt-2">Find a local satsang community near you</p>
-          </div>
-          <button className="h-12 px-6 rounded-full bg-brand text-white font-bold hover:bg-brand-dark transition-colors">
+
+      {/* Hero */}
+      <section className="bg-warm-bg">
+        <div className="max-w-[1200px] mx-auto px-6 py-12">
+          <span className="text-xs font-bold text-brand tracking-widest uppercase">Community</span>
+          <h1 className="font-heading text-4xl md:text-5xl font-bold tracking-tight mt-2">Bhajan Groups</h1>
+          <p className="text-dark/70 text-lg mt-3 max-w-2xl">
+            Find a local satsang, kirtan circle, or study group near you. Join to RSVP for events, vote on bhajans, and sign up for prasad.
+          </p>
+        </div>
+      </section>
+
+      {/* Groups grid */}
+      <section className="max-w-[1200px] mx-auto px-6 py-10">
+        <div className="flex flex-wrap gap-4 items-center justify-between mb-8">
+          <span className="text-dark/60 font-medium">{groups.length} groups near Troy, MI</span>
+          <button className="h-10 px-5 rounded-full bg-brand text-white font-bold text-sm hover:bg-brand-dark">
             Start a group
           </button>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {groups.map(group => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {groups.map((group) => (
             <Link
               key={group.id}
-              href={`/groups/${group.slug ?? group.id}`}
-              className="group border border-warm-border rounded-2xl p-6 flex flex-col gap-3 hover:border-purple-300 hover:bg-purple-50/30 transition no-underline"
+              href={`/groups/${group.slug || group.id}`}
+              className="border border-warm-border rounded-2xl p-6 text-dark no-underline hover:border-brand hover:bg-warm-bg/50 transition-colors flex flex-col gap-3 group"
             >
-              <h2 className="font-heading text-xl font-bold text-slate-900 group-hover:text-purple-700 transition-colors">
-                {group.name}
-              </h2>
-              <p className="text-slate-600 text-sm line-clamp-2">{group.description}</p>
-              <div className="flex flex-wrap gap-2 mt-auto pt-2">
-                <span className="text-xs px-2.5 py-1 bg-warm-surface rounded-full font-medium text-slate-700">
-                  {group.city}, {group.state}
-                </span>
-                <span className="text-xs px-2.5 py-1 bg-warm-surface rounded-full font-medium text-slate-700">
-                  {group.member_count} members
-                </span>
-                {group.frequency && (
-                  <span className="text-xs px-2.5 py-1 bg-warm-surface rounded-full font-medium text-slate-700">
-                    {group.frequency}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="font-heading text-xl font-bold group-hover:text-brand-dark transition-colors">{group.name}</h2>
+                  <span className="text-sm text-dark/50">
+                    {group.city}, {group.state} · {group.member_count} members · {group.frequency || "Monthly"}
                   </span>
-                )}
-              </div>
-              {group.languages.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {group.languages.map(lang => (
-                    <span key={lang} className="text-xs px-2 py-0.5 border border-warm-border rounded-full text-slate-500">
-                      {lang}
-                    </span>
-                  ))}
                 </div>
-              )}
+                <span className="shrink-0 text-3xl">🙏</span>
+              </div>
+
+              <p className="text-dark/70 text-sm leading-relaxed m-0">{group.description}</p>
+
+              <div className="flex flex-wrap gap-1.5">
+                {(group.tags ?? []).map((tag) => (
+                  <span key={tag} className="text-xs font-medium bg-warm-surface text-dark/70 px-2.5 py-1 rounded-full">
+                    {tag}
+                  </span>
+                ))}
+                {(group.languages ?? []).map((lang) => (
+                  <span key={lang} className="text-xs font-medium bg-brand/10 text-brand-dark px-2.5 py-1 rounded-full">
+                    {lang}
+                  </span>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-warm-border mt-1">
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-brand uppercase tracking-wide">Frequency</span>
+                  <span className="text-sm font-medium">{group.frequency || "Monthly"}</span>
+                </div>
+                <span className="text-xs text-dark/50">{group.member_count} members</span>
+              </div>
             </Link>
           ))}
         </div>
-      </div>
+      </section>
+
+      {/* CTA */}
+      <section className="max-w-[1200px] mx-auto px-6 pb-16">
+        <div className="bg-warm-surface border border-warm-border rounded-3xl p-10 flex flex-col md:flex-row gap-6 items-center justify-between">
+          <div className="flex flex-col gap-2">
+            <h2 className="font-heading text-2xl font-bold">Don&apos;t see your group?</h2>
+            <p className="text-dark/60 m-0">Start one in minutes. Invite members, schedule events, and manage bhajan lists all in one place.</p>
+          </div>
+          <button className="px-8 py-4 rounded-full bg-brand text-white font-bold whitespace-nowrap hover:bg-brand-dark">
+            Start a bhajan group
+          </button>
+        </div>
+      </section>
+
       <Footer />
     </div>
   );

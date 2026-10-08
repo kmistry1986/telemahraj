@@ -163,10 +163,7 @@ export async function getShopProducts(category?: string) {
 // ---- Bhajan group queries ----
 
 export async function getBhajanGroups(city?: string) {
-  let q = supabase
-    .from("bhajan_groups")
-    .select("*")
-    .eq("active", true);
+  let q = supabase.from("bhajan_groups").select("*").eq("active", true);
   if (city) q = q.ilike("city", `%${city}%`);
   const { data, error } = await q.order("member_count", { ascending: false });
   if (error) throw error;
@@ -178,16 +175,7 @@ export async function getBhajanGroupBySlug(slug: string) {
     .from("bhajan_groups")
     .select("*")
     .eq("slug", slug)
-    .single();
-  if (error) throw error;
-  return data as BhajanGroup;
-}
-
-export async function getBhajanGroupById(id: string) {
-  const { data, error } = await supabase
-    .from("bhajan_groups")
-    .select("*")
-    .eq("id", id)
+    .eq("active", true)
     .single();
   if (error) throw error;
   return data as BhajanGroup;
@@ -201,6 +189,7 @@ export async function getGroupNextEvent(groupId: string) {
     .eq("group_id", groupId)
     .gte("event_date", today)
     .order("event_date", { ascending: true })
+    .order("event_time", { ascending: true })
     .limit(1)
     .maybeSingle();
   if (error) throw error;
@@ -208,12 +197,14 @@ export async function getGroupNextEvent(groupId: string) {
 }
 
 export async function getGroupEvents(groupId: string) {
+  const today = new Date().toISOString().split("T")[0];
   const { data, error } = await supabase
     .from("bhajan_group_events")
     .select("*")
     .eq("group_id", groupId)
-    .order("event_date", { ascending: false })
-    .limit(10);
+    .gte("event_date", today)
+    .order("event_date", { ascending: true })
+    .order("event_time", { ascending: true });
   if (error) throw error;
   return data as BhajanGroupEvent[];
 }
