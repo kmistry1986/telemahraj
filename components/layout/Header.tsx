@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 const NAV_LINKS = [
   { href: "/search", label: "Find a Mahraj" },
@@ -11,6 +13,29 @@ const NAV_LINKS = [
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [email, setEmail] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setEmail(data.user?.email ?? null);
+      setReady(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setEmail(session?.user?.email ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setEmail(null);
+    router.push("/");
+    router.refresh();
+  }
 
   return (
     <header className="border-b border-warm-border">
@@ -31,18 +56,34 @@ export default function Header() {
               key={link.href}
               href={link.href}
               className={`no-underline font-medium ${
-                pathname.startsWith(link.href)
-                  ? "text-brand-dark"
-                  : "text-dark hover:text-brand-dark"
+                pathname.startsWith(link.href) ? "text-brand-dark" : "text-dark hover:text-brand-dark"
               }`}
             >
               {link.label}
             </Link>
           ))}
         </nav>
-        <Link href="/dashboard" className="no-underline font-medium text-dark hover:text-brand-dark">
-          For Mahrajs
-        </Link>
+
+        {ready && email ? (
+          <>
+            <Link href="/account" className="no-underline font-medium text-dark hover:text-brand-dark">
+              My bookings
+            </Link>
+            <button onClick={handleLogout} className="font-medium text-dark hover:text-brand-dark bg-transparent border-0 cursor-pointer p-0">
+              Log out
+            </button>
+          </>
+        ) : (
+          <>
+            <Link href="/mahraj-signup" className="no-underline font-medium text-dark hover:text-brand-dark">
+              For Mahrajs
+            </Link>
+            <Link href="/login" className="no-underline font-medium text-dark hover:text-brand-dark">
+              Log in
+            </Link>
+          </>
+        )}
+
         <Link
           href="/search"
           className="no-underline font-bold text-sm px-5 py-2.5 rounded-lg bg-brand text-white hover:bg-brand-dark"

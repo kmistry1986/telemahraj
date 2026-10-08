@@ -33,6 +33,7 @@ export default async function BookPage({ params }: { params: { id: string } }) {
     <div className="min-h-screen bg-white">
       <Header />
       <BookingForm
+        serviceId={service.id}
         serviceName={service.name}
         mahrajName={mahrajName}
         mahrajId={mahraj.id ?? ""}

@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatMoney, calcFee, formatMinutes } from "@/lib/utils";
 import { PLATFORM_FEE_PCT } from "@/types/database";
+import { createClient } from "@/lib/supabase/client";
 
 export interface BookingSegment {
   id: string;
@@ -14,6 +16,7 @@ export interface BookingSegment {
 }
 
 export interface BookingFormProps {
+  serviceId: string;
   serviceName: string;
   mahrajName: string;
   mahrajId: string;
@@ -24,8 +27,15 @@ export interface BookingFormProps {
 }
 
 const KIT_PRICE_CENTS = 12900;
+const TIME_SLOTS = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "18:00"];
+
+function timeLabel(t: string) {
+  const [h, m] = t.split(":").map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
+}
 
 export default function BookingForm({
+  serviceId,
   serviceName,
   mahrajName,
   mahrajId,
@@ -34,8 +44,10 @@ export default function BookingForm({
   languages,
   segments,
 }: BookingFormProps) {
+  const router = useRouter();
   const hasSegments = segments.length > 0;
   const langOptions = languages.length ? languages : ["English"];
+  const today = new Date().toISOString().split("T")[0];
 
   const [included, setIncluded] = useState<Record<string, boolean>>(
     Object.fromEntries(segments.map((s) => [s.id, true]))
@@ -45,6 +57,11 @@ export default function BookingForm({
   const [explanations, setExplanations] = useState(true);
   const [format, setFormat] = useState<"in_person" | "virtual" | "hybrid">("in_person");
   const [addKit, setAddKit] = useState(false);
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [address, setAddress] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
 
   const activeSegments = segments.filter((s) => included[s.id]);
@@ -54,7 +71,12 @@ export default function BookingForm({
     : baseDuration;
   const adjustedMinutes = pace === "expedited" ? Math.round(totalMinutes * 0.7) : totalMinutes;
   const subtotal = ceremonyPrice + (addKit ? KIT_PRICE_CENTS : 0);
+  const platformFeeCents = Math.round(subtotal * PLATFORM_FEE_PCT / 100);
+  const totalCents = subtotal + platformFeeCents;
   const { fee } = calcFee(ceremonyPrice);
+  const mahrajPayoutCents = ceremonyPrice - fee;
+
+  const needsAddress = format !== "virtual";
 
   const toggleSegment = (id: string) => {
     const seg = segments.find((s) => s.id === id);
@@ -62,19 +84,70 @@ export default function BookingForm({
     setIncluded((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  async function handleConfirm() {
+    setError(null);
+    if (!date || !time) {
+      setError("Please choose a date and time.");
+      return;
+    }
+    if (needsAddress && !address.trim()) {
+      setError("Please enter the ceremony address.");
+      return;
+    }
+
+    setSubmitting(true);
+    const supabase = createClient();
+
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      router.push(`/login?redirect=${encodeURIComponent(`/book/${serviceId}`)}`);
+      return;
+    }
+
+    const { error: insertError } = await supabase.from("bookings").insert({
+      user_id: userData.user.id,
+      mahraj_id: mahrajId,
+      service_id: serviceId,
+      ceremony_date: date,
+      ceremony_time: time,
+      date,
+      time,
+      location: format === "virtual" ? "Virtual" : address.trim(),
+      address: format === "virtual" ? null : address.trim(),
+      virtual: format === "virtual",
+      ceremony_type: serviceName,
+      language,
+      explanations_enabled: explanations,
+      format,
+      pace,
+      total_price: totalCents / 100,
+      total_price_cents: totalCents,
+      platform_fee_cents: platformFeeCents,
+      mahraj_payout_cents: mahrajPayoutCents,
+      samagri_kit_added: addKit,
+      status: "pending",
+    });
+
+    setSubmitting(false);
+    if (insertError) {
+      setError(insertError.message || "Could not create the booking. Please try again.");
+      return;
+    }
+    setConfirmed(true);
+  }
+
   if (confirmed) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-16">
         <div className="bg-white rounded-3xl p-10 flex flex-col gap-6 items-start">
           <div className="w-16 h-16 rounded-full bg-green-success text-white flex items-center justify-center text-2xl font-bold">&#10003;</div>
-          <h1 className="font-heading text-4xl font-bold">Booking confirmed</h1>
+          <h1 className="font-heading text-4xl font-bold">Booking requested</h1>
           <p className="text-slate-900 text-lg m-0">
-            Your {serviceName} with {mahrajName} is scheduled. You will receive a confirmation email with
-            preparation details and your Mahraj&apos;s setup video.
+            Your {serviceName} with {mahrajName} has been requested for {new Date(date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} at {timeLabel(time)}. You will hear back once the Mahraj confirms.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link href={`/mahraj/${mahrajId}`} className="px-6 py-3 rounded-full bg-brand text-white font-bold no-underline hover:bg-brand-dark">
-              View Mahraj profile
+            <Link href="/account" className="px-6 py-3 rounded-full bg-brand text-white font-bold no-underline hover:bg-brand-dark">
+              View my bookings
             </Link>
             <Link href="/" className="px-6 py-3 rounded-full border border-dark text-dark font-bold no-underline hover:bg-warm-surface">
               Back to home
@@ -138,6 +211,48 @@ export default function BookingForm({
             <strong className="font-heading text-2xl">{formatMoney(basePrice)}</strong>
           </section>
         )}
+
+        {/* Date, time & location */}
+        <section className="border border-warm-border rounded-2xl p-6 flex flex-col gap-4">
+          <h2 className="font-heading text-xl font-bold">Date, time & location</h2>
+          <div className="flex flex-wrap gap-4">
+            <label className="flex flex-col gap-1.5 font-bold text-sm flex-1 min-w-[160px]">
+              Date
+              <input
+                type="date"
+                min={today}
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="h-12 border border-warm-muted rounded-xl px-3 text-slate-900 font-normal"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5 font-bold text-sm flex-1 min-w-[160px]">
+              Time
+              <select
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="h-12 border border-warm-muted rounded-xl px-3 text-slate-900 font-normal"
+              >
+                <option value="">Select a time</option>
+                {TIME_SLOTS.map((t) => (
+                  <option key={t} value={t}>{timeLabel(t)}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {needsAddress && (
+            <label className="flex flex-col gap-1.5 font-bold text-sm">
+              Ceremony address
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Street, city, state"
+                className="h-12 border border-warm-muted rounded-xl px-3 text-slate-900 font-normal"
+              />
+            </label>
+          )}
+        </section>
 
         {/* Pace */}
         <section className="border border-warm-border rounded-2xl p-6 flex flex-col gap-4">
@@ -249,11 +364,11 @@ export default function BookingForm({
             )}
             <div className="flex justify-between">
               <span className="text-slate-900">Platform fee ({PLATFORM_FEE_PCT}%)</span>
-              <span>{formatMoney(fee)}</span>
+              <span>{formatMoney(platformFeeCents)}</span>
             </div>
             <div className="flex justify-between border-t border-warm-border pt-3 mt-1">
               <strong>Total</strong>
-              <strong className="font-heading text-2xl">{formatMoney(subtotal + Math.round(subtotal * PLATFORM_FEE_PCT / 100))}</strong>
+              <strong className="font-heading text-2xl">{formatMoney(totalCents)}</strong>
             </div>
           </div>
           <div className="flex flex-col gap-1 text-sm text-slate-900">
@@ -261,12 +376,15 @@ export default function BookingForm({
             <span>Language: {language}{explanations ? " + English explanations" : ""}</span>
             <span>Format: {format === "in_person" ? "In person" : format === "virtual" ? "Virtual" : "In person + virtual"}</span>
           </div>
+          {error && <p className="text-red-600 text-sm m-0">{error}</p>}
           <button
-            onClick={() => setConfirmed(true)}
-            className="w-full py-3.5 rounded-full bg-brand text-white font-bold hover:bg-brand-dark"
+            onClick={handleConfirm}
+            disabled={submitting}
+            className="w-full py-3.5 rounded-full bg-brand text-white font-bold hover:bg-brand-dark disabled:opacity-60"
           >
-            Confirm booking
+            {submitting ? "Requesting…" : "Confirm booking"}
           </button>
+          <p className="text-slate-900 text-xs m-0 text-center">You will be asked to log in if you have not already.</p>
         </div>
       </aside>
     </div>
